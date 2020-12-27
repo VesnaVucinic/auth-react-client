@@ -1,13 +1,13 @@
-import React from 'react';
 import './App.css';
-import Secrets from './components/Secrets.js'
-import Login from "./components/Login"
-import Logout from "./components/Logout"
+import React from 'react'
+import Login from './components/Login'
+import Secrets from './components/Secrets'
+import Logout from './components/Logout'
 
 class App extends React.Component {
-  constructor(){
+  constructor() {
     super()
-    this.state = {
+    this.state ={
       currentUser: null,
       loginForm: {
         email: "",
@@ -16,6 +16,31 @@ class App extends React.Component {
       secrets: []
     }
   }
+
+  // // lifecycle method within react component relates to refreshing a page
+  // componentDidMount() {
+  //   // first I need to get token from locale storage
+  //   const token = localStorage.getItem("token")
+  //   if (token) {
+  //     fetch("http://localhost:3001/get_current_user", {
+  //       headers: {
+  //         // I need authorization key of token
+  //         "Authorization": token
+  //       }
+  //     })
+  //     .then(r => r.json())
+  //     .then(resp => {
+  //       if (resp.error) {
+  //         alert(resp.error)
+  //       } else {
+  //         this.setState({
+  //           currentUser: resp.user
+  //         })
+  //       }
+  //     })
+  //     .catch(console.log)
+  //   }
+  // }
 
   componentDidMount() {
     const token = localStorage.getItem("token")
@@ -49,11 +74,11 @@ class App extends React.Component {
     })
   }
 
-  handleLoginFormSubmit = event => {
+  handleLoginFormSubmit = event =>{
     event.preventDefault()
-    // now I need to submit the info from the form to the back end
-    // ... where I will authenticate the user, and if valid, send the user back
-    // with that response, set my state, all is glorious with the world
+    // now I need to submit info from the form to the backend
+    // where I will authanticate user and if valid send the user back
+    // with that response set my state
     const userInfo = this.state.loginForm
     const headers = {
       method: "POST",
@@ -64,22 +89,46 @@ class App extends React.Component {
         user: userInfo
       })
     }
-    fetch("http://localhost:3001/login", headers)
+    fetch("http://127.0.0.1:3001/login", headers)
+    .then(r => r.json())
+    .then(resp => {
+      if(resp.error) {
+        alert("Invalid credentials")
+      } else {
+        console.log(resp)
+        this.setState({
+          currentUser: resp,
+          loginForm: {
+            email: "",
+            password: ""
+          }
+        })
+        localStorage.setItem('token', resp.jwt)
+      }
+    })
+    .catch(console.log)
+  }
+
+  getSecrets= () => {
+    const token = localStorage.getItem("token")
+    fetch("http://127.0.0.1:3001/secrets", {
+      headers: {
+        "Authorization": token
+      }
+    })
       .then(r => r.json())
-      .then(resp => {
-        if (resp.error) {
-          // failure
-          alert("invalid credentials")
+      .then(secrets => {
+        if (secrets.error) {
+          alert("Not authorized for those secrets")
         } else {
-          // success
+          // when we fetch secrets we want to:
+          // in React we want to couse a change of our state with setState,
+          // in Redux we fire action that triggers reducers and trigger a change of state
           this.setState({
-            currentUser: resp.user,
-            loginForm: {
-              email: "",
-              password: ""
-            }
+            // I replace existing arrey of secrets with tis response which is also called secrets
+            secrets
+            // secrets: secrets
           })
-          localStorage.setItem('token', resp.jwt)
         }
       })
       .catch(console.log)
@@ -92,27 +141,6 @@ class App extends React.Component {
       currentUser: null,
       secrets: []
     })
-  }
-
-  getSecrets = () => {
-    const token = localStorage.getItem("token")
-    fetch("http://localhost:3001/secrets", {
-      headers: {
-        "Authorization": token
-      }
-    })
-      .then(r => r.json())
-      .then(secrets => {
-        if (secrets.error) {
-          alert("Not authorized for those secrets")
-        } else {
-          // success
-          this.setState({
-            secrets
-          })
-        }
-      })
-      .catch(console.log)
   }
 
   render() {
@@ -143,11 +171,3 @@ class App extends React.Component {
 }
 
 export default App;
-
-// I can built higher order component that wraps any of my components that need
-// authorization or authentication 
-// higher order component is just a function that takes a component as an argument and returns 
-// another component
-// React connect   is higher order component
-//  connent returns a function that receives a component as an argument and returns a component 
-// return value of invocing Connect in Redux is an higher order function that takes component as an argument and returns another component that has added props to it
